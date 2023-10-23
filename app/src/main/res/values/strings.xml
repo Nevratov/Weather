@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Weather</string>
+    <string name="input_city">Введите город</string>
+    <string name="button_show_weather">Узнать погоду</string>
+    <string name="url_json_template"><![CDATA[https://api.openweathermap.org/data/2.5/forecast?q=%s&appid=b7749ae3543b116a1955408b4c3b455a&cnt=6&units=metric&lang=ru]]></string>
+    <string name="toast_wrong_input_city">Название населённого пункта не верно</string>
+    <string name="description_ico_current_weather">Иконка текущей погоды</string>
+</resources>
