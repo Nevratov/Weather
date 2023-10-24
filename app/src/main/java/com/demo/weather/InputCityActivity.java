@@ -3,38 +3,74 @@ package com.demo.weather;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
-import android.widget.EditText;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 public class InputCityActivity extends AppCompatActivity {
 
-    EditText editTextInputCity;
+    AutoCompleteTextView editTextInputCity;
     private static JSONObject jsonObject;
+
+    private ArrayList<String> russianCities;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_input_city);
-        editTextInputCity = findViewById(R.id.editTextInputCity);
+
+        downloadCitiesInArrayFromJson();
+
+        editTextInputCity = findViewById(R.id.autoCompleteTextViewInputCity);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, russianCities);
+        editTextInputCity.setAdapter(adapter);
+
+    }
+
+    public void downloadCitiesInArrayFromJson() {
+        AssetManager manager = getAssets();
+        try {
+            InputStream inputStream = manager.open("russian_cities.json");
+            int size = inputStream.available();
+            byte[] buffer = new byte[size];
+            inputStream.read(buffer);
+            inputStream.close();
+            String jsonString = new String(buffer, StandardCharsets.UTF_8);
+            JSONArray jsonArrayCities = new JSONArray(jsonString);
+
+            russianCities = new ArrayList<>();
+
+            for (int i = 0; i < jsonArrayCities.length(); i++) {
+                String name = jsonArrayCities.getJSONObject(i).getString("name");
+                String subject = jsonArrayCities.getJSONObject(i).getString("subject");
+                russianCities.add(name + ", " + subject);
+            }
+        } catch (IOException | JSONException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void onClickShowWeather(View view) {
         createUrlForJSONObject();
-        if (statusCode()) {
+        if (jsonObject != null && statusCode()) {
             Intent intent = new Intent(this, WeatherShowActivity.class);
             intent.putExtra("json", jsonObject.toString());
             startActivity(intent);
@@ -48,14 +84,14 @@ public class InputCityActivity extends AppCompatActivity {
         if (city != null) {
             String urlJSON = String.format(getString(R.string.url_json_template), city);
             createJSONObject(urlJSON);
-        } else
-            showToastInvalidCity();
+        }
     }
 
     private void createJSONObject(String urlJSON) {
         try {
             DownloadJSON task = new DownloadJSON();
             String json = task.execute(urlJSON).get();
+        if (json != null)
             jsonObject = new JSONObject(json);
         } catch (JSONException | ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
@@ -104,7 +140,7 @@ public class InputCityActivity extends AppCompatActivity {
                 }
                 return result.toString();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                return null;
             } finally {
                 if (urlConnection != null)
                     urlConnection.disconnect();
